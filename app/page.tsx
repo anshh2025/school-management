@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -10,21 +10,56 @@ export default function Home() {
   const [roll, setRoll] = useState("");
   const [search, setSearch] = useState("");
 
-  const addStudent = () => {
+  // Fetch initial students from backend on page load
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const res = await fetch("/api/students");
+        const data = await res.json();
+        setStudents(data);
+      } catch (error) {
+        console.error("Failed to fetch students:", error);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  // Add student to backend
+  const addStudent = async () => {
     if (!name || !studentClass || !roll) return;
 
-    setStudents([...students, { name, studentClass, roll }]);
+    const student = { name, studentClass, roll };
 
-    setName("");
-    setStudentClass("");
-    setRoll("");
+    try {
+      // Send to backend
+      await fetch("/api/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(student),
+      });
+
+      // Fetch updated list
+      const res = await fetch("/api/students");
+      const data = await res.json();
+      setStudents(data);
+
+      // Clear inputs
+      setName("");
+      setStudentClass("");
+      setRoll("");
+    } catch (error) {
+      console.error("Failed to add student:", error);
+    }
   };
 
+  // Delete student (UI only for now)
   const deleteStudent = (index: number) => {
     const newList = students.filter((_, i) => i !== index);
     setStudents(newList);
   };
 
+  // Filter students for search
   const filteredStudents = students.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -73,12 +108,12 @@ export default function Home() {
         />
         <br />
 
-        <Button onClick={addStudent} style={{ width: "100%" }}>
+        <Button onClick={addStudent} style={{ width: "100%", marginTop: "10px" }}>
           Add Student
         </Button>
 
         {/* Search */}
-        <h3 style={{ marginTop: "15px" }}>Search</h3>
+        <h3 style={{ marginTop: "20px" }}>Search</h3>
         <Input
           placeholder="Search by name"
           value={search}
